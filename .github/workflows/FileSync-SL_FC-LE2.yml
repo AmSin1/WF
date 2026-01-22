@@ -118,21 +118,22 @@ jobs:
           
           for FILE in "${FILES[@]}"; do
             FILE_NAME=$(basename "$FILE")
-            if [ -f "$FILE" ]; then
-              if git diff --quiet "$FILE" && git status --porcelain "$FILE" | grep -qv "^??"; then # compares playlists against the repository index   
-                SKIPPED_NAMES+="$FILE_NAME " # file is identical to the one in the repo and will not be committed; adds to skipped list
+            if [ -f "$FILE" ]; then       
+              GIT_STATUS=$(git status --porcelain "$FILE") # uses git status to determine the file state
+              if [[ -z "$GIT_STATUS" ]]; then # if git status is empty, it means the file is unchanged/clean
+                SKIPPED_NAMES+="$FILE_NAME " # playlist is identical to the one in the repo and will not be committed; adds to skipped list
                 SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
               else
-                COMMITTED_NAMES+="$FILE_NAME " # file is changed or new and will be committed; adds to committed list and gathers metrics
+                COMMITTED_NAMES+="$FILE_NAME " # playlist is changed or new and will be committed; adds to committed list and gathers metrics
                 COMMITTED_COUNT=$((COMMITTED_COUNT + 1))
                 SIZE=$(stat -c%s "$FILE") 
                 EXTINF=$(grep -c '#EXTINF' "$FILE" || true)
                 SUMMARY_DETAILS+="\n  - $FILE_NAME ($SIZE bytes): now has $EXTINF #EXTINF lines"
+                git add "$FILE" # stage only the changed/new files selectively based on the git status check         
               fi
             fi
           done
           
-          git add . # stages all changes in the current directory 
           if git diff --cached --quiet; then # checks if there are any changes
             echo "RESULT: No changes found to commit in any playlists"
           else
