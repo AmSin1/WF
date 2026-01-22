@@ -212,7 +212,7 @@ jobs:
                       printf "%s# Playlist from %s : %d streams \n\n%s", prefix, src_name, count, file_buf # add source identifier header + 1-line trail spacing + content
                     }
                   }
-                ' \ # end of awk logic string for deduplication, custom spacing and formatting
+                ' \
                 "$src_path" >> "$target" # appends input playlists to the merged playlist using the awk logic
 
                 if grep -q "Playlist from $src" "$target"; then # verify if block was added to determine custom spacing for the next block
