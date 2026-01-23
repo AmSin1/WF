@@ -144,6 +144,7 @@ jobs:
 
           # Step 4: Commit changes, push to destination branch and echo final commit summaries  
           if git diff --cached --quiet; then # checks if there are any changes
+            echo "----------------------------------------------------------------------------------------------------------"
             echo "RESULT: No changes found to commit in any playlists"
           else
             git commit -m "Automated sync from source" # only commits if a binary or text difference exists, alongwith commit message
