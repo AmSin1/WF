@@ -141,11 +141,11 @@ jobs:
             # git pull origin ${{ env.DESTINATION_BRANCH }} --rebase # rebases pull to ensure local is ahead of remote (enable if facing commit/push failures)
             git push origin ${{ env.DESTINATION_BRANCH }} # pushes to the destination branch
             echo "------------------------------------------------------------------------------------------------------"
-            echo "RESULT: Commits were made to $COMMITTED_COUNT playlists: $COMMITTED_NAMES"
-            echo -e "Detailed Info: $SUMMARY_DETAILS"
+            echo "RESULT: Commits were made to $COMMITTED_COUNT playlist(s): $COMMITTED_NAMES"
+            echo -e "Details: $SUMMARY_DETAILS"
           fi
           echo "------------------------------------------------------------------------------------------------------"
-          echo "RESULT: $SKIPPED_COUNT playlists remain unchanged and were skipped: $SKIPPED_NAMES"
+          echo "RESULT: $SKIPPED_COUNT playlist(s) remain unchanged and were skipped: $SKIPPED_NAMES"
           echo "------------------------------------------------------------------------------------------------------"
           
 
@@ -194,7 +194,7 @@ jobs:
                 local file_size=$(stat -c%s "$src_path") # file size in bytes of the cleaned input playlist
                 local extinf_count=$(grep -c "#EXTINF" "$src_path" || true) # count of #EXTINF lines present in the cleaned input playlist
                 cleaned_details+="\n  - $src: $file_size bytes, $extinf_count #EXTINF lines"  # for appending to the summary list for the group-level debug echo
-                echo "DEBUG: Cleaned input playlist $src (size: $file_size bytes). $extinf_count EXTINF lines found." # debug for cleaning step for individual input playlists
+                echo "DEBUG: Cleaned input playlist $src (size: $file_size bytes). $extinf_count #EXTINF lines found." # debug for cleaning step for individual input playlists
               else
                 echo "ERROR: Cleaning FAILED for input playlist $src or valid playlist $src NOT FOUND in $(pwd). Skipping file."
               fi
@@ -265,7 +265,7 @@ jobs:
                 if grep -q "Playlist from $src" "$target"; then # verify if block was added to determine custom spacing for the next block
                    block_index=$((block_index + 1))  # only increment block_index if streams in preceding block were actually added
                 fi        
-                echo "DEBUG: $src merged. Group Tracker Count: $(wc -l < "$TRACKER")"
+                echo "DEBUG: Deduplicated stream URLs from $src appended. $output now has $(wc -l < "$TRACKER") unique stream URLs."
               done # end of module for deduplication, custom spacing, formatting and appending streams
               
               # module: clean up tracker
@@ -277,7 +277,7 @@ jobs:
               local final_path="$dir/$output"
               local final_size=$(stat -c%s "$final_path")
               local final_extinf=$(grep -c "#EXTINF" "$final_path" || true)
-              echo "RESULT: Merge process for $output COMPLETED successfully. $output ($final_size bytes) is ready to push. $final_extinf EXTINF lines present." # debug at the end of merge process
+              echo "RESULT: Merge process for $output COMPLETED successfully. $output ($final_size bytes) is ready to push. $final_extinf #EXTINF lines present." # debug at the end of merge process
               return 0
             else
               echo "RESULT: Merge process for $output FAILED at deduplication, fomratting or appending stage." 
