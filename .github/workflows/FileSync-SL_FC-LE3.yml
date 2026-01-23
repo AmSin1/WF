@@ -194,7 +194,7 @@ jobs:
             echo "-----------------------------------------------------------------------------"
 
             # Sub-step 1a: Clean input playlists for a specific merged playlist - remove carriage returns and BOMs
-            echo "DEBUG: Starting cleaning of input playlists for merged playlist $output..."
+            echo "Starting cleaning of input playlists for merged playlist $output..."
             local successful_san_count=0 # count of successfully cleaned input playlists for this merged playlist, starts from 0
             local cleaned_details="" # record of file-size and count of #EXTINF lines in successfully cleaned input playlists, starts blank
 
@@ -205,7 +205,7 @@ jobs:
                 local file_size=$(stat -c%s "$src_path") # file size in bytes of the cleaned input playlist
                 local extinf_count=$(grep -c "#EXTINF" "$src_path" || true) # count of #EXTINF lines present in the cleaned input playlist
                 cleaned_details+="\n  - $src: $file_size bytes, $extinf_count #EXTINF lines"  # for appending to the summary list for the group-level debug echo
-                echo "DEBUG: Cleaned input playlist $src (size: $file_size bytes). $extinf_count #EXTINF lines found." # debug for cleaning step for individual input playlists
+                echo "Cleaned input playlist $src (size: $file_size bytes). $extinf_count #EXTINF lines found." # debug for cleaning step for individual input playlists
               else
                 echo "ERROR: Cleaning FAILED for input playlist $src or valid playlist $src NOT FOUND in $(pwd). Skipping file."
               fi
@@ -213,7 +213,7 @@ jobs:
 
             # Sub-step 1b: Echo group-level summary report after cleaning input files for this merged playlist
             if [ $successful_san_count -gt 0 ]; then
-              echo -e "DEBUG: Cleaning of input playlists for merged playlist $output COMPLETED. $successful_san_count input playlists successfully cleaned:$cleaned_details"
+              echo -e "RESULT: Cleaning of input playlists for merged playlist $output COMPLETED. $successful_san_count input playlists successfully cleaned:$cleaned_details"
             fi
 
             # Sub-step 1c: Gate - if no input playlists for this merged playlist were cleaned, skip its merge process
@@ -223,7 +223,7 @@ jobs:
             fi
  
             # Sub-step 1d: Deduplicate, format and append stream URLs from each cleaned input playlist to this merged playlist
-            echo "DEBUG: Starting deduplication and merge of cleaned input playlists into $output..."
+            echo "Starting deduplication and merge of cleaned input playlists into $output..."
             (
               set -e # ensures that subshell exits on critical command failure
               local target="$dir/$output"
@@ -275,7 +275,7 @@ jobs:
                 if grep -q "Playlist from $src" "$target"; then # verify if block was added to determine custom spacing for the next block
                    block_index=$((block_index + 1))  # only increment block_index if streams in preceding block were actually added
                 fi        
-                echo "DEBUG: Stream URLs from $src deduplicated and appended. $output now has $(wc -l < "$TRACKER") unique stream URLs."
+                echo "Stream URLs from $src deduplicated and appended. $output now has $(wc -l < "$TRACKER") unique stream URLs."
               done # end of module for deduplication, custom spacing, formatting and appending streams
               
               # module: clean up tracker
