@@ -23,6 +23,7 @@ on:
     # - cron: '*/22 * * * *'  
       
 env:
+  GITHUB_TOKEN: ${{ secrets.PAT_FG_SYNC }}
   CRONJOB_SERVICE: "FastCron"
   DESTINATION_REPO_URL: "https://github.com/AmSin1/Repo.git"
   DESTINATION_REPO: "AmSin1/Repo"
@@ -85,10 +86,9 @@ jobs:
             TARGET="destination-branch/$DIR/$FILE" # sets destination file path for each playlist download 
             
             # Sub-step 2a: Fetch the playlist's last update date from GitHub API and download playlist 
-            OWNER_REPO_PATH=$(echo "$URL" | sed -E 's|https://raw.githubusercontent.com([^/]+)/([^/]+)/([^/]+)/(.*)|\1 \2 \3 \4|')
+            OWNER_REPO_PATH=$(echo "$URL" | sed -E 's|https://raw.githubusercontent.com/([^/]+)/([^/]+)/([^/]+)/(.*)|\1 \2 \3 \4|')
             read -r OWNER REPO BRANCH FILE_PATH <<< "$OWNER_REPO_PATH"
-            API_URL="https://api.github.com" # formulates the API URL specifically for the last commit of the playlist
-            RAW_COMMIT_DATE=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_FG_SYNC }}" "$API_URL" | jq -r 'if type=="array" then .[0].commit.committer.date else empty end') # API call to get the latest commit date for this path
+            RAW_COMMIT_DATE=$(gh api "/repos/$OWNER/$REPO/commits?path=$FILE_PATH&sha=$BRANCH&per_page=1" --jq '.[0].commit.committer.date' 2>/dev/null || echo "") # GH API (GitHub CLI) call to get the latest commit date for this path
             if [ -n "$RAW_COMMIT_DATE" ] && [ "$RAW_COMMIT_DATE" != "null" ]; then
               SRC_MOD_TIME=$(TZ='Asia/Kolkata' date -d "$RAW_COMMIT_DATE" "+%d-%m-%Y %H:%M IST" 2>/dev/null || echo "Unknown") # converts ISO 8601 date to IST format (%d-%m-%Y %H:%M IST)
             else
