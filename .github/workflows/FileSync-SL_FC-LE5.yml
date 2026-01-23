@@ -232,7 +232,7 @@ jobs:
               # module: initialize merged playlist
               echo "#EXTM3U" > "$target" # initializes the merged playlist with standard EXTM3U header
               printf "\n" >> "$target" # adds 1-line trailing spacing
-              rm -f "$TRACKER" && touch "$TRACKER" # initialize a fresh instance of the tracker at this point
+              touch "$TRACKER" # initialize a fresh instance of the tracker at this point
 
               # module: append streams from a cleaned input playlist to the merged playlist after deduplication, custom spacing and formatting; echo result
               local block_index=0 # block_index tracks which source m3u-block we are currently writing to
@@ -241,13 +241,16 @@ jobs:
                 [ ! -f "$src_path" ] && continue
 
                 # function: awk for deduplication and custom formatting
-                awk -v src_name="$src" -v tracker="$TRACKER" -v idx="$block_index" ' # start of awk logic string for deduplication, custom spacing and formatting
+                awk -v src_name="$src" -v tracker="$TRACKER" -v idx="$block_index" \ # start of awk logic string for deduplication, custom spacing and formatting
+                    -v dfmt="+%d-%m-%Y %H:%M IST" -v q="\x27" '
 
                   # sub-module: pre-processing
                   BEGIN {
                     count=0; tag_buf=""; file_buf=""; found_stream=0; # ignore everything till found_stream tuens 1, then start processing everything
-                    while ((getline line < tracker) > 0) { seen[line] = 1 } # pre-load disk tracker - load existing unique stream URLs into a memory array
-                    close(tracker)
+                    if ((getline < tracker) > 0) { # pre-load disk tracker - load existing unique stream URLs into a memory array
+                      do { seen[$0] = 1 } while ((getline < tracker) > 0)
+                      close(tracker)
+                    }
                   } 
 
                   # sub-module: deduplication
@@ -258,7 +261,7 @@ jobs:
                         tag_buf = tag_buf $0 "\n" # buffer metadata lines
                     } else if (/^(http|https):\/\//) {
                         url = $0 # deduplicate URLs using the group tracker                       
-                        if (!seen[url]) { # deduplication: Internal memory check
+                        if (!seen[url]) { # deduplication: internal memory check
                             print url >> tracker # update disk tracker
                             seen[url] = 1 # update memory array                      
                             file_buf = file_buf tag_buf url "\n"
@@ -272,9 +275,10 @@ jobs:
                   END {
                     if (count > 0) { # custom spacing logic: block_index 0 = first block (no preceding space), block_index > 0 = subsequent blocks (2-line preceding space)
                       prefix = (idx == 0) ? "" : "\n\n" # if not the first block, prepend 2 empty lines
-                      cmd = "TZ=Asia/Kolkata date -r " FILENAME " +\x22%d-%m-%Y %H:%M IST\x22"; # temporarily sets the timezone for this specific date command execution without affecting the rest of the workflow; 'date -r FILENAME' reads the last modification time of the file being processed
-                      if ((cmd | getline last_mod) <= 0) last_mod = "Unknown"; close(cmd); # close() command ensures the pipe is closed immediately after the date is captured, preventing system resource leaks into this loop    
-                      printf "%s# Playlist from %s (last updated: %s) : %d streams \n\n%s", prefix, src_name, last_mod, count, file_buf; # add source identifier header + 1-line trail spacing + content
+                      cmd = "TZ=Asia/Kolkata date -r " FILENAME " " q dfmt q; # temporarily sets the timezone for this specific date command execution without affecting the rest of the workflow; 'date -r FILENAME' reads the last modification time of the file being processed
+                      if ((cmd | getline last_mod) <= 0) last_mod = "Unknown"; # close command ensures the pipe is closed immediately after the date is captured, preventing system resource leaks into this loop   
+                      close(cmd);
+                      printf "%s# Playlist from %s (last updated: %s) : %d streams \n\n%s", prefix, src_name, last_mod, count, file_buf # add source identifier header + 1-line trail spacing + content
                     }
                   }                 
                 ' "$src_path" >> "$target" # appends input playlists to the merged playlist using the awk logic
