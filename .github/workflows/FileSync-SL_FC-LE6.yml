@@ -86,6 +86,9 @@ jobs:
             TARGET="destination-branch/$DIR/$FILE" # sets destination file path for each playlist download 
             
             # Sub-step 2a: Fetch the playlist's last update date from GitHub API and download playlist 
+            git config url.https://${{ secrets.PAT_FG_SYNC }}@github.com/.insteadOf https://github.com/
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com" 
             read -r OWNER REPO BRANCH FILE_PATH <<< $(echo "$URL" | sed -E 's|https://raw.githubusercontent.com/([^/]+)/([^/]+)/([^/]+)/(.*)|\1 \2 \3 \4|')
             RAW_COMMIT_DATE=$(gh api -H "Accept: application/vnd.github+json" \
               "/repos/$OWNER/$REPO/commits?path=$FILE_PATH&sha=$BRANCH&per_page=1" \
