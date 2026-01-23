@@ -37,8 +37,8 @@ env:
   MERGED_PLAYLIST2: "fc-le-all.m3u"
   SOURCE_PLAYLIST2a_URL: "https://github.com/jitendra-unatti/fancode/raw/main/data/fancode.m3u" # source updated and working
   SOURCE_PLAYLIST2b_URL: "https://github.com/drmlive/fancode-live-events/raw/main/fancode.m3u" # source updated and working
-  SOURCE_PLAYLIST2c_URL: "https://github.com/IPTVFlixBD/Fancode-BD/raw/main/playlist.m3u"
-  SOURCE_PLAYLIST2d_URL: "https://github.com/abusaeeidx/CrestSport-IPTV-Collection/raw/main/fncbd.m3u"
+  SOURCE_PLAYLIST2c_URL: "https://github.com/IPTVFlixBD/Fancode-BD/raw/main/playlist.m3u" # source updated and working
+  SOURCE_PLAYLIST2d_URL: "https://github.com/abusaeeidx/CrestSport-IPTV-Collection/raw/main/fncbd.m3u" # source updated and working
   SOURCE_PLAYLIST2e_URL:
 
 concurrency: # ensures that only one GitHub workflow runs at a time for a specific branch in a repo, prevents conditions where two separate workflow runs attempt to push to same branch simultaneously
@@ -46,7 +46,7 @@ concurrency: # ensures that only one GitHub workflow runs at a time for a specif
   cancel-in-progress: false # 'false' ensures that a newly-started workflow runs sequentially after and does not terminate a still in-progress workflow run, ensuring that every workflow's changes are eventually pushed
 
 jobs:   
-  copy_source_playlists: # copies specified playlists from source repo and overwrites corresponding specified playlists in destination branch/directory in destination repo
+  copy_source_playlists: # copies specified playlists from source repos and overwrites corresponding specified playlists in destination branch/directories in destination repo
     runs-on: ubuntu-latest
     permissions:
       contents: write # grants permissions for the job to write to contents
@@ -66,6 +66,7 @@ jobs:
           mkdir -p destination-branch/${{ env.DESTINATION_DIR1_PATH }} # creates destination directory if it doesn't already exist
           mkdir -p destination-branch/${{ env.DESTINATION_DIR2_PATH }} # creates destination directory if it doesn't already exist
 
+          # Step 1: Define the playlist array
           PLAYLISTS=( # defines the list of playlists to process in a pipe-separated array (URL|DIR|FILE)
             "${{ env.SOURCE_PLAYLIST1a_URL }}|${{ env.DESTINATION_DIR1_PATH }}|sl-le-1.m3u"
             "${{ env.SOURCE_PLAYLIST1b_URL }}|${{ env.DESTINATION_DIR1_PATH }}|sl-le-2.m3u"
@@ -76,13 +77,15 @@ jobs:
             "${{ env.SOURCE_PLAYLIST2d_URL }}|${{ env.DESTINATION_DIR2_PATH }}|fc-le-4.m3u"
           )
 
-          # Optional Curl Configuration in next line:
+          # Step 2: Download playlists using curl command
+          # Optional Curl configuration in next line:
           CURL_FLAGS="--retry 3 --retry-delay 1 --max-time 6 --no-progress-meter" # retry up to x times; delay of exactly x seconds between retries; total time for initial attempt + retries capped at x seconds
           for entry in "${PLAYLISTS[@]}"; do # iterates through the playlists array
             IFS="|" read -r URL DIR FILE <<< "$entry" # extracts data from the playlist array string using IFS pipe separator
-            TARGET="destination-branch/$DIR/$FILE" # file path for each playlist download
-            curl $CURL_FLAGS -L --fail -o "$TARGET" "$URL" || true # 'true' here is the file-level 'continue-on-error: true' flag to ensures that the loop continues even if one download fails
-  
+            TARGET="destination-branch/$DIR/$FILE" # sets destination file path for each playlist download
+            curl $CURL_FLAGS -L --fail -o "$TARGET" "$URL" || true # downloads playlist; 'true' here is the file-level 'continue-on-error: true' flag to ensures that the loop continues even if one download fails
+
+            # Sub-step 2a: Echo success/failure and key metrics for each download
             if [ -f "$TARGET" ] && [ $(date -r "$TARGET" +%s) -ge $START_TIME ]; then # checks if playlist exists AND was actually updated/created during this specific workflow run            
               SIZE=$(stat -c%s "$TARGET")  # calculates file size of such playlist
               COUNT=$(grep -c '#EXTINF' "$TARGET" || true) # counts number of #EXTINF lines in such playlist
@@ -91,17 +94,21 @@ jobs:
               echo "$FILE download : FAILED"
             fi
           done
-          
-          rm -f *.tmp *.temp temp_* # cleans up temporary work files
+
+          # Step 3: Clean up temporary work files       
+          rm -f *.tmp *.temp temp_* # 
       
       - name: Commit Changes and Push to Destination Branch
         run: |
           cd destination-branch # changes current working directory to the destination branch
-          git config url.https://${{ secrets.PAT_FG_SYNC }}@github.com/.insteadOf https://github.com/ # configure git
-          git config user.name "github-actions[bot]" # configure git
-          git config user.email "github-actions[bot]@users.noreply.github.com" # configure git    
 
-          FILES=( # defines the list of playlists for analysis
+          # Step 1: Configure git          
+          git config url.https://${{ secrets.PAT_FG_SYNC }}@github.com/.insteadOf https://github.com/
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"  
+
+          # Step 2: Define the list of downloaded playlists for analysis
+          FILES=(
             "${{ env.DESTINATION_DIR1_PATH }}/sl-le-1.m3u"
             "${{ env.DESTINATION_DIR1_PATH }}/sl-le-2.m3u"
             "${{ env.DESTINATION_DIR1_PATH }}/sl-le-3.m3u"
@@ -110,12 +117,13 @@ jobs:
             "${{ env.DESTINATION_DIR2_PATH }}/fc-le-3.m3u"
             "${{ env.DESTINATION_DIR2_PATH }}/fc-le-4.m3u"
           )
-          COMMITTED_NAMES="" # initializes tracking variables for the final summary echos
+
+          # Step 3: Use tracking variables to analyse downloaded playlists for the final summary echos        
+          COMMITTED_NAMES=""
           COMMITTED_COUNT=0
           SKIPPED_NAMES=""
           SKIPPED_COUNT=0
-          SUMMARY_DETAILS=""
-          
+          SUMMARY_DETAILS=""         
           for FILE in "${FILES[@]}"; do
             FILE_NAME=$(basename "$FILE")
             if [ -f "$FILE" ]; then       
@@ -133,7 +141,8 @@ jobs:
               fi
             fi
           done
-          
+
+          # Step 4: Commit changes, push to destination branch and echo final commit summaries  
           if git diff --cached --quiet; then # checks if there are any changes
             echo "RESULT: No changes found to commit in any playlists"
           else
@@ -150,7 +159,7 @@ jobs:
           
 
   
-  create_merged_playlist: # creates a custom-formatted deduplicated merged playlist with prioritized m3u comtent-blocks from already copied source playlists
+  create_merged_playlist: # creates custom-formatted deduplicated merged playlists with prioritized m3u comtent-blocks from input playlists
     needs: copy_source_playlists # forces this job to wait for the referenced job to finish (forces sequential instead of the default parallel execution)
     if: always() # this job runs regardless of other jobs' success/failure status
     runs-on: ubuntu-latest
@@ -171,7 +180,7 @@ jobs:
           cd destination-branch # changes current working directory to the destination branch
           TOTAL_GROUP_FAILURES=0 # tracks global failures across the clean and merge processes of all merged playlists, starts from 0
 
-          # Helper Function for Cleaning and Merging
+          # Step 1: Use helper function for seqnuential cleaning and merging
           process_group() { # function encapsulating cleaning and merging processes for any given merged playlist folder
             local dir="$1"
             local output="$2"
@@ -182,7 +191,7 @@ jobs:
             echo "PROCESS START: Creation of merged playlist $output in folder $dir"
             echo "-----------------------------------------------------------------------------"
 
-            # Sub-step A: Clean input playlists - remove carriage returns and BOMs
+            # Sub-step 1a: Clean input playlists for a specific merged playlist - remove carriage returns and BOMs
             echo "DEBUG: Starting cleaning of input playlists for merged playlist $output..."
             local successful_san_count=0 # count of successfully cleaned input playlists for this merged playlist, starts from 0
             local cleaned_details="" # record of file-size and count of #EXTINF lines in successfully cleaned input playlists, starts blank
@@ -200,30 +209,30 @@ jobs:
               fi
             done
 
-            # Sub-step B: Group-level summary report after cleaning input files for this merged playlist
+            # Sub-step 1b: Echo group-level summary report after cleaning input files for this merged playlist
             if [ $successful_san_count -gt 0 ]; then
               echo -e "DEBUG: Cleaning of input playlists for merged playlist $output COMPLETED. $successful_san_count input playlists successfully cleaned:$cleaned_details"
             fi
 
-            # Gate: If no input playlists for this merged playlist were cleaned, skip its merge process
+            # Sub-step 1c: Gate - if no input playlists for this merged playlist were cleaned, skip its merge process
             if [ $successful_san_count -eq 0 ]; then # gate: if none of the input playlists for this merged playlist were successfully cleaned, skips its merge process, workflow continues to cleaning imput playlists for the next merged playlist (ensured by 'return' rather than 'exit')
               echo "RESULT: Merge process for $output FAILED at cleaning stage. Found no valid input playlists or cleaning failed for all input playlists."
               return 1 # exits the process_group function with an error code; TOTAL_GROUP_FAILURES=$((TOTAL_GROUP_FAILURES + 1)) logic used in calling the function ensures that the failure is recorded
             fi
  
-            # Sub-step C: Merge of Input Files to Merged Playlist
+            # Sub-step 1d: Deduplicate, format and append stream URLs from each cleaned input playlist to this merged playlist
             echo "DEBUG: Starting deduplication and merge of cleaned input playlists into $output..."
             (
               set -e # ensures that subshell exits on critical command failure
               local target="$dir/$output"
               local TRACKER="/tmp/seen_${output}_$(date +%s).tmp" # creates a unique temp tracker for this group's deduplication
 
-              # module: initialization of merged playlist
+              # module: initialize merged playlist
               echo "#EXTM3U" > "$target" # initializes the merged playlist with standard EXTM3U header
               printf "\n" >> "$target" # adds 1-line trailing spacing
               rm -f "$TRACKER" && touch "$TRACKER" # initialize a fresh instance of the tracker at this point
 
-              # module: deduplication, custom spacing, formatting and appending streams
+              # module: append streams from a cleaned input playlist to the merged playlist after deduplication, custom spacing and formatting; echo result
               local block_index=0 # block_index tracks which source m3u-block we are currently writing to
               for src in "${sources[@]}"; do
                 local src_path="$dir/$src"
@@ -258,9 +267,8 @@ jobs:
                       prefix = (idx == 0) ? "" : "\n\n" # if not the first block, prepend 2 empty lines
                       printf "%s# Playlist from %s : %d streams \n\n%s", prefix, src_name, count, file_buf # add source identifier header + 1-line trail spacing + content
                     }
-                  }
-                ' \
-                "$src_path" >> "$target" # appends input playlists to the merged playlist using the awk logic
+                  }                 
+                ' "$src_path" >> "$target" # appends input playlists to the merged playlist using the awk logic
 
                 if grep -q "Playlist from $src" "$target"; then # verify if block was added to determine custom spacing for the next block
                    block_index=$((block_index + 1))  # only increment block_index if streams in preceding block were actually added
@@ -272,7 +280,7 @@ jobs:
               rm -f "$TRACKER"
             )
 
-            # Sub-step D: Echo result at end of merge process
+            # Sub-step 1e: Echo result at end of merge process for this merged playlist
             if [ $? -eq 0 ]; then
               local final_path="$dir/$output"
               local final_size=$(stat -c%s "$final_path")
@@ -285,7 +293,7 @@ jobs:
             fi
           }
 
-          # Sequential Independent Execution of Playlist Groups
+          # Sequential independent execution of playlist groups
           process_group "${{ env.DESTINATION_DIR1_PATH }}" "${{ env.MERGED_PLAYLIST1 }}" "sl-le-1.m3u" "sl-le-2.m3u" "sl-le-3.m3u" || TOTAL_GROUP_FAILURES=$((TOTAL_GROUP_FAILURES + 1))
           process_group "${{ env.DESTINATION_DIR2_PATH }}" "${{ env.MERGED_PLAYLIST2 }}" "fc-le-1.m3u" "fc-le-2.m3u" "fc-le-3.m3u" "fc-le-4.m3u" || TOTAL_GROUP_FAILURES=$((TOTAL_GROUP_FAILURES + 1))
 
@@ -294,9 +302,13 @@ jobs:
       - name: Push Merged Playlists to Destination Branch
         run: |
           cd destination-branch
+
+          # Step 1: Configure git             
           git config url.https://${{ secrets.PAT_FG_SYNC }}@github.com/.insteadOf https://github.com/ # configure git
           git config user.name "github-actions[bot]" # configure git
           git config user.email "github-actions[bot]@users.noreply.github.com" # configure git
+
+          # Step 2: Stage merged playlists sequentially and echo its commit result              
           MERGED_PLAYLISTS=("${{ env.DESTINATION_DIR1_PATH }}/${{ env.MERGED_PLAYLIST1 }}" "${{ env.DESTINATION_DIR2_PATH }}/${{ env.MERGED_PLAYLIST2 }}") # defines output merged playlists
             git add "${MERGED_PLAYLISTS[@]}" # stages only the merged playlists  
           for file in "${MERGED_PLAYLISTS[@]}"; do
@@ -306,6 +318,8 @@ jobs:
               fi
             fi
           done
+          
+          # Step 3: Commit changes, push to destination branch and echo final commit summaries            
           if git diff --staged --quiet; then # detects changes using exit code (0 = no diff, 1 = diff) # checks if changes are detected in any merged playlist at all
             echo "RESULT: No changes found to commit for any merged playlist"
           else
