@@ -312,8 +312,8 @@ jobs:
 
           # Step 2: Define the list of merged playlists for analysis
           FILES=(
-            "${{ env.DESTINATION_DIR1_PATH }}/sl-le-all.m3u"
-            "${{ env.DESTINATION_DIR2_PATH }}/fc-le-all.m3u"
+            "${{ env.DESTINATION_DIR1_PATH }}/${{ env.MERGED_PLAYLIST1 }}"
+            "${{ env.DESTINATION_DIR2_PATH }}/${{ env.MERGED_PLAYLIST2 }}"
           )
 
           # Step 3: Iterate through the merged playlists to analyse using tracking variables for the final summary echos        
