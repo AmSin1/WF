@@ -239,10 +239,11 @@ jobs:
               for src in "${sources[@]}"; do
                 local src_path="$dir/$src"
                 [ ! -f "$src_path" ] && continue
+                RAW_DATE=$(stat -c %y "$src_path") # captures raw update date from the input playlist
+                LAST_MOD=$(TZ='Asia/Kolkata' date -d "$RAW_DATE" "+%d-%m-%Y %H:%M IST") # formats raw date to DD-MM-YYYY format and applies IST timezone
 
                 # function: awk for deduplication and custom formatting
-                awk -v src_name="$src" -v tracker="$TRACKER" -v idx="$block_index" \
-                    -v dfmt="+%d-%m-%Y %H:%M IST" -v q="\x27" '
+                awk -v src_name="$src" -v tracker="$TRACKER" -v idx="$block_index" -v mod_date="$LAST_MOD" '
 
                   # sub-module: pre-processing
                   BEGIN {
@@ -275,10 +276,7 @@ jobs:
                   END {
                     if (count > 0) { # custom spacing logic: block_index 0 = first block (no preceding space), block_index > 0 = subsequent blocks (2-line preceding space)
                       prefix = (idx == 0) ? "" : "\n\n" # if not the first block, prepend 2 empty lines
-                      cmd = "TZ=Asia/Kolkata date -r " FILENAME " " q dfmt q; # temporarily sets the timezone for this specific date command execution without affecting the rest of the workflow; 'date -r FILENAME' reads the last modification time of the file being processed
-                      if ((cmd | getline last_mod) <= 0) last_mod = "Unknown"; # close command ensures the pipe is closed immediately after the date is captured, preventing system resource leaks into this loop   
-                      close(cmd);
-                      printf "%s# Playlist from %s (last updated: %s) : %d streams \n\n%s", prefix, src_name, last_mod, count, file_buf # add source identifier header + 1-line trail spacing + content
+                      printf "%s# Playlist from %s (last updated %s) : %d streams \n\n%s", prefix, src_name, mod_date, count, file_buf # add source identifier header + 1-line trail spacing + content
                     }
                   }                 
                 ' "$src_path" >> "$target" # appends input playlists to the merged playlist using the awk logic
