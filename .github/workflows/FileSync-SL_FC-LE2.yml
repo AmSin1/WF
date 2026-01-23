@@ -300,7 +300,7 @@ jobs:
 
           echo "TOTAL_FAILURES=$TOTAL_GROUP_FAILURES" >> $GITHUB_ENV # export result to GitHub environment
 
-      - name: Push Merged Playlists to Destination Branch
+      - name: Commit Changes and Push Merged Playlists to Destination Branch
         run: |
           cd destination-branch
 
