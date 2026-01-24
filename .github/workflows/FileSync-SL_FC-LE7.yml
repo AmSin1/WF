@@ -202,13 +202,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # grants permissions for the job to write to contents
-    steps:
-      - name: Download Artifcat with Remote Timestamps Metadata
-        uses: actions/download-artifact@v4
-        with:
-          name: playlist-metadata
-          path: .    
-          
+    steps:          
       - name: Checkout Destination Branch in Destination Repo
         uses: actions/checkout@v4
         with:
@@ -217,6 +211,12 @@ jobs:
           fetch-depth: 0 # get full history to allow rebasing (recommended for every job that needs to commit and push back)
           persist-credentials: false # REQUIRED if upstream repo is private (see wiki)
           path: 'destination-branch'
+
+      - name: Download Artifcat with Remote Timestamps Metadata
+        uses: actions/download-artifact@v4
+        with:
+          name: playlist-metadata
+          path: .    
 
       - name: Process, Deduplicate, Format and Merge Playlists sequentially
         run: |
