@@ -107,7 +107,6 @@ jobs:
                 else
                   API_STATUS="Failed (API error or file not found in commits)"
                 fi
-                echo "$FILE|$MOD_TIME" >> "$METADATA_FILE" # records the filename and its remote timestamp into the metadata file
               fi
               echo "DEBUG: API Check for $FILE -> $API_STATUS" # output API status for logging/debugging
               if [ -z "$MOD_TIME" ]; then # if API check skipped or failed, use the file's current (or -R preserved) timestamp
@@ -116,7 +115,7 @@ jobs:
               fi              
               SIZE=$(stat -c%s "$TARGET") # calculates file size of such playlist
               COUNT=$(grep -c '#EXTINF' "$TARGET" || true) # counts number of #EXTINF lines in such playlist
-              
+              echo "$FILE|$MOD_TIME" >> "$METADATA_FILE" # records the filename and its remote timestamp into the metadata file
               echo "$FILE download : SUCCESS. Last updated $MOD_TIME $TIME_NOTE. File size $SIZE bytes. $COUNT #EXTINF lines present."
               unset MOD_TIME # reset variables for next iteration
               unset COMMIT_DATE # reset variables for next iteration
