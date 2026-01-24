@@ -86,12 +86,6 @@ jobs:
             HTTP_CODE=$(curl $CURL_FLAGS -R -L --fail -w "%{http_code}" -o "$TARGET" "$URL" || echo "000") # downloads the playlist using curl and captures the HTTP status code to verify download success
             EXIT_CODE=$?
             curl -I "${{ env.SOURCE_PLAYLIST1a_URL }}"
-            curl -I "${{ env.SOURCE_PLAYLIST1b_URL }}"
-            curl -I "${{ env.SOURCE_PLAYLIST1c_URL }}"
-            curl -I "${{ env.SOURCE_PLAYLIST2a_URL }}"
-            curl -I "${{ env.SOURCE_PLAYLIST2b_URL }}"
-            curl -I "${{ env.SOURCE_PLAYLIST2c_URL }}"
-            curl -I "${{ env.SOURCE_PLAYLIST2d_URL }}"
 
             
             
