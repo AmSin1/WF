@@ -300,7 +300,7 @@ jobs:
 
   
   create_merged_playlist: # creates custom-formatted deduplicated merged playlists with prioritized m3u comtent-blocks from input playlists
-    needs: download_playlists # forces this job to wait for the referenced job to finish (forces sequential instead of the default parallel execution)
+    needs: consolidate_and_push # forces this job to wait for the referenced job to finish (forces sequential instead of the default parallel execution)
     if: always() # this job runs regardless of other jobs' success/failure status
     runs-on: ubuntu-latest
     permissions:
