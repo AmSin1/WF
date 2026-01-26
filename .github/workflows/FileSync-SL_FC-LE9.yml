@@ -237,7 +237,7 @@ jobs:
             
             # Sub-step 1b: Echo group-level download results with key metrics
             echo "RESULT for folder $DIR : successfully downloaded $S_COUNT playlists ($T_SIZE bytes). Total $T_EXTINF #EXTINF lines present."
-            echo "RESULT for folder $DIR : failed to download $F_COUNT playlists (${F_NAMES:-none})."
+            echo "RESULT for folder $DIR : failed to download $F_COUNT playlists: ${F_NAMES:-(none)}"
             echo "------------------------------------------------------------------------------------------------------------------------"
           done
 
@@ -264,7 +264,7 @@ jobs:
               if [[ -n $(git status --porcelain "$TARGET") ]]; then # uses git status to determine the file state
                 COMMITTED_NAMES+="$FILE " # playlist is changed or new and will be committed; adds to committed list
                 COMMITTED_COUNT=$((COMMITTED_COUNT + 1))
-                SUMMARY_DETAILS+="\n  - $FILE : last updated $TIMESTAMP $NOTE - $SIZE bytes with $COUNT #EXTINF lines"
+                SUMMARY_DETAILS+="\n  - $FILE : last updated $TIMESTAMP $NOTE - $SIZE bytes, $COUNT #EXTINF lines"
                 git add "$TARGET" # stages only the changed/new files selectively based on the git status check 
               else
                 SKIPPED_NAMES+="$FILE " # playlist is identical to the one in the repo and will not be committed; adds to skipped list
@@ -276,19 +276,19 @@ jobs:
 
           # Step 5: Commit changes, push to destination branch and echo final commit summaries  
           if git diff --cached --quiet; then # checks if there are any changes
-            echo "----------------------------------------------------------------------------------------------------------"
+            echo "------------------------------------------------------------------------------------------------------------------------"
             echo "RESULT: No changes found to commit in any of the $SKIPPED_COUNT playlists. Skipping push."
           else
             git commit -m "Automated sync from source" # only commits if a binary or text difference exists, alongwith commit message
             # git pull origin ${{ env.DESTINATION_BRANCH }} --rebase # rebases pull to ensure local is ahead of remote (enable if facing commit/push failures)
             git push origin ${{ env.DESTINATION_BRANCH }} # pushes to the destination branch
-            echo "----------------------------------------------------------------------------------------------------------"
+            echo "------------------------------------------------------------------------------------------------------------------------"
             echo "RESULT: Successfully committed and pushed $COMMITTED_COUNT updated playlist(s)."
             echo -e "Details: $SUMMARY_DETAILS"
           fi
-          echo "----------------------------------------------------------------------------------------------------------"
-          echo "RESULT: $SKIPPED_COUNT playlist(s) were found unchanged and were skipped: $SKIPPED_NAMES"
-          echo "----------------------------------------------------------------------------------------------------------"
+          echo "------------------------------------------------------------------------------------------------------------------------"
+          echo "RESULT: $SKIPPED_COUNT playlist(s) were found unchanged and were skipped: ${SKIPPED_NAMES:-(none)}"
+          echo "------------------------------------------------------------------------------------------------------------------------"
 
       - name: Upload Artifcat with Remote Timestamps Metadata
         uses: actions/upload-artifact@v4
