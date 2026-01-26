@@ -189,6 +189,8 @@ jobs:
             downloads/
             batch_${{ matrix.batch }}.meta
 
+
+
   consolidate_and_push: # create consolidated metadata file, echo group metrics, commit and push to destination branch
     needs: download_playlists
     if: always() # this job runs regardless of other jobs' success/failure status, generates the final report even if some downloads failed
@@ -252,7 +254,7 @@ jobs:
           # Step 3: Configure git          
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.PAT_FG_SYNC }}@github.com/{{ env.DESTINATION_REPO }}.git # avoids the alternative 'insteadOf' approach to prevent leakage of secret in logs
+          git remote set-url origin https://x-access-token:${{ secrets.PAT_FG_SYNC }}@github.com/${{ env.DESTINATION_REPO }}.git # avoids the alternative 'insteadOf' approach to prevent leakage of secret in logs
           
           # Step 4: Analyse downloaded playlists for final summary echos, and stage changed/new files for commit 
           COMMITTED_NAMES=""; COMMITTED_COUNT=0; SKIPPED_NAMES=""; SKIPPED_COUNT=0; SUMMARY_DETAILS=""
