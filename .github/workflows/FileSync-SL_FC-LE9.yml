@@ -366,7 +366,7 @@ jobs:
                 # sub-module: for input playlist successfully downloaded in this workflow run, extract from condolidated metadata file
                 local ts=$(echo "$meta_entry" | cut -d'|' -f5) # extracts field 5 (remote timestamp) 
                 local note=$(echo "$meta_entry" | cut -d'|' -f6) # extracts field 6 (time note)
-                LAST_MOD="$ts $note" combines remote timestamp and time note
+                LAST_MOD="$ts $note" # combines remote timestamp and time note
               else
                 # sub-module: for input playlist not downloaded in this worflow run, fallback to timestamp of the existing file in the repo
                 local ts=$(TZ='Asia/Kolkata' date -r "$src_path" "+%d-%m-%Y %H:%M IST")
