@@ -516,18 +516,15 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.PAT_FG_SYNC }}@github.com/${{ env.DESTINATION_REPO }}.git # avoids the alternative 'insteadOf' approach to prevent leakage of secret in logs
   
-          # Step 2: Define the list of merged playlists for analysis
-          FILES=(
-            "${{ env.DESTINATION_DIR1_PATH }}/${{ env.MERGED_PLAYLIST1 }}"
-            "${{ env.DESTINATION_DIR2_PATH }}/${{ env.MERGED_PLAYLIST2 }}"
-          )
+          # Step 2: Dynamically load the merged playlists registered in the previous step
+          if [ -f "../merged_files_to_commit.txt" ]; then
+            mapfile -t FILES < ../merged_files_to_commit.txt
+          else
+            FILES=()
+          fi
 
           # Step 3: Iterate through the merged playlists to analyse using tracking variables for the final summary echos        
-          COMMITTED_NAMES=""
-          COMMITTED_COUNT=0
-          SKIPPED_NAMES=""
-          SKIPPED_COUNT=0
-          SUMMARY_DETAILS=""         
+          COMMITTED_NAMES=""; COMMITTED_COUNT=0; SKIPPED_NAMES=""; SKIPPED_COUNT=0; SUMMARY_DETAILS=""         
           for FILE in "${FILES[@]}"; do
             FILE_NAME=$(basename "$FILE")
             if [ -f "$FILE" ]; then       
@@ -564,8 +561,10 @@ jobs:
           echo "------------------------------------------------------------------------------------------------------------------------"
           echo "RESULT: $SKIPPED_COUNT merged playlist(s) were found unchanged and were skipped: $SKIPPED_NAMES"
           echo "------------------------------------------------------------------------------------------------------------------------"
-          if [ "${{ env.TOTAL_FAILURES }}" -gt 0 ]; then # final job reporting
-            echo "DEBUG: Final Status: FAIL (total $TOTAL_FAILURES group failures recorded)"
+          
+          # Step 5: Final job failure reporting         
+          if [ "${{ env.TOTAL_FAILURES }}" -gt 0 ]; then
+            echo "DEBUG: Final Status: FAIL (workflow ended with $TOTAL_FAILURES group failures)"
             exit 1
           fi
 
