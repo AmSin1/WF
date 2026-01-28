@@ -48,12 +48,12 @@ jobs:
           
           # Step 2: Export JSON keys/values to GitHub environment
           echo "$CONFIG_JSON" | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> $GITHUB_ENV # extracts all keys and values and writes them to the global $GITHUB_ENV
-          echo "SUCCESS: JSON configuration validated and loaded into GitHub environment."
           
           # Step 3: Mask individual variables for public log security
           echo "$CONFIG_JSON" | jq -r '.[]' | while read -r value; do
             [ -n "$value" ] && echo "::add-mask::$value" # ensures that even after parsing, individual parsed variables are masked as '***' in logs
           done
+          echo "SUCCESS: JSON configuration validated and loaded into GitHub environment."
       
       - name: Checkout Destination Branch in Destination Repo
         uses: actions/checkout@v4
@@ -249,12 +249,12 @@ jobs:
           
           # Step 2: Export JSON keys/values to GitHub environment
           echo "$CONFIG_JSON" | jq -r 'to_entries[] | "\(.key)=\(.value)"' >> $GITHUB_ENV # extracts all keys and values and writes them to the global $GITHUB_ENV
-          echo "SUCCESS: JSON configuration validated and loaded into GitHub environment."
           
           # Step 3: Mask individual variables for public log security
           echo "$CONFIG_JSON" | jq -r '.[]' | while read -r value; do
             [ -n "$value" ] && echo "::add-mask::$value" # ensures that even after parsing, individual parsed variables are masked as '***' in logs
           done
+          echo "SUCCESS: JSON configuration validated and loaded into GitHub environment."
 
       - name: Checkout Destination Branch in Destination Repo
         uses: actions/checkout@v4
