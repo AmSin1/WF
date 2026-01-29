@@ -283,7 +283,6 @@ jobs:
 
       - name: Process, Deduplicate, Format and Merge Playlists
         run: |
-          cd merge-branch # changes current working directory to the destination branch
           TOTAL_GROUP_FAILURES=0 # tracks global failures across the clean and merge processes of all merged playlists, starts from 0
           PLAYLIST_METADATA="${{ github.workspace }}/remote_timestamps.meta"
           touch ../merged_files_to_commit.txt # creates a registry file to track successfully created merged playlists for the commit step
@@ -305,7 +304,7 @@ jobs:
             local cleaned_details="" # record of file-size and count of #EXTINF lines in successfully cleaned input playlists, starts blank
 
             for src in "${sources[@]}"; do
-              local src_path="$dir/$src"
+              local src_path="download-branch/$dir/$src"
 
               # module: fallback to playlist in repository if current download of an input playlist fails 
               if [ ! -f "$src_path" ]; then # if input playlist is missing (current download failed), uses the existing playlist in the repo for merge process
@@ -353,14 +352,16 @@ jobs:
             # Sub-step 1c: Gate - if no input playlists for this merged playlist were cleaned, skip its merge process
             if [ $successful_san_count -eq 0 ]; then # gate: if none of the input playlists for this merged playlist were successfully cleaned, skips its merge process, workflow continues to cleaning imput playlists for the next merged playlist (ensured by 'return' rather than 'exit')
               echo "RESULT: Merge process for $output FAILED at cleaning stage. Found no valid input playlists or cleaning failed for all input playlists."
-              return 1 # exits the process_group function with an   error code; TOTAL_GROUP_FAILURES=$((TOTAL_GROUP_FAILURES + 1)) logic used in calling the function ensures that the failure is recorded
+              return 1 # exits the process_group function with an error code; TOTAL_GROUP_FAILURES=$((TOTAL_GROUP_FAILURES + 1)) logic used in calling the function ensures that the failure is recorded
             fi
  
             # Sub-step 1d: Deduplicate, format and append stream URLs from each cleaned input playlist to this merged playlist
             echo "Starting deduplication and merge of cleaned input playlists into $output..."
             (
               set -e # ensures that subshell exits on critical command failure
-              local target="$dir/$output"
+              local target_dir="merge-branch/$dir"
+              mkdir -p "$target_dir"
+              local target="$target_dir/$output"
               local TRACKER="/tmp/seen_${output}_$(date +%s).tmp" # creates a unique temp tracker for this group's deduplication
 
               # module: initialize merged playlist
@@ -371,7 +372,7 @@ jobs:
               # module: append streams from a cleaned input playlist to the merged playlist after deduplication, custom spacing and formatting; echo result
               local block_index=0 # block_index tracks which source m3u-block we are currently writing to
               for src in "${sources[@]}"; do
-                local src_path="$dir/$src"
+                local src_path="download-branch/$dir/$src"
                 [ ! -f "$src_path" ] && continue
 
                 # sub-module: fetch-timestamps for the block-level header (similar logic to cleaning stage)
@@ -435,7 +436,7 @@ jobs:
 
             # Sub-step 1e: Echo result at end of merge process for this merged playlist
             if [ $? -eq 0 ]; then
-              local final_path="$dir/$output"
+              local final_path="$target_dir/$output"
               local final_size=$(stat -c%s "$final_path")
               local final_extinf=$(grep -c "#EXTINF" "$final_path" || true)
               echo "RESULT: Merge process for $output COMPLETED. $output ($final_size bytes) is ready to push. $final_extinf #EXTINF lines present." # debug at the end of merge process
