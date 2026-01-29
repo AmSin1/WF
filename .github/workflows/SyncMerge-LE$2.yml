@@ -87,8 +87,8 @@ jobs:
           # Step 3: Download playlists and sync remote timestamps
           echo "$LIST" | while IFS="|" read -r URL DIR FILE; do # extracts data from the playlist array string using IFS pipe separator
             [ -z "$URL" ] && continue
-            TARGET="destination-branch/$DIR/$FILE" # sets destination file path for each playlist download
-            mkdir -p "destination-branch/$DIR" # creates destination directory if it doesn't already exist
+            TARGET="download-branch/$DIR/$FILE" # sets destination file path for each playlist download
+            mkdir -p "download-branch/$DIR" # creates destination directory if it doesn't already exist
 
             # Sub-step 3a: Download each playlist from source repos
             CURL_FLAGS="--connect-timeout 3 --retry 3 --retry-delay 1 --retry-max-time 10 --retry-all-errors --no-progress-meter" # optional curl flags
@@ -182,7 +182,7 @@ jobs:
           # Step 2: Configure git          
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.PAT_FG_SYNC }}@github.com/${{ env.DESTINATION_REPO }}.git # avoids the alternative 'insteadOf' approach to prevent leakage of secret in logs
+          git remote set-url origin https://x-access-token:${{ secrets.PAT_FG_SYNC }}@github.com/${{ env.DOWNLOAD_REPO }}.git # avoids the alternative 'insteadOf' approach to prevent leakage of secret in logs
           
           # Step 3: Analyse downloaded playlists for final summary echos, and stage changed/new files for commit 
           COMMITTED_NAMES=""; COMMITTED_COUNT=0; SKIPPED_NAMES=""; SKIPPED_COUNT=0; SUMMARY_DETAILS=""
@@ -281,7 +281,7 @@ jobs:
 
       - name: Process, Deduplicate, Format and Merge Playlists
         run: |
-          cd destination-branch # changes current working directory to the destination branch
+          cd merge-branch # changes current working directory to the destination branch
           TOTAL_GROUP_FAILURES=0 # tracks global failures across the clean and merge processes of all merged playlists, starts from 0
           PLAYLIST_METADATA="${{ github.workspace }}/remote_timestamps.meta"
           touch ../merged_files_to_commit.txt # creates a registry file to track successfully created merged playlists for the commit step
@@ -474,7 +474,7 @@ jobs:
           # Step 1: Configure git             
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.PAT_FG_SYNC }}@github.com/${{ env.DESTINATION_REPO }}.git # avoids the alternative 'insteadOf' approach to prevent leakage of secret in logs
+          git remote set-url origin https://x-access-token:${{ secrets.PAT_FG_SYNC }}@github.com/${{ env.MERGE_REPO }}.git # avoids the alternative 'insteadOf' approach to prevent leakage of secret in logs
   
           # Step 2: Dynamically load the merged playlists registered in the previous step
           if [ -f "../merged_files_to_commit.txt" ]; then
