@@ -511,7 +511,9 @@ jobs:
           # Step 4: Commit changes, push to destination branch and echo final commit summaries  
           if git diff --cached --quiet; then # checks if there are any changes
             echo "------------------------------------------------------------------------------------------------------------------------"
-            echo "RESULT: No changes found to commit for any merged playlists. Check if files exist at: $(ls -R)"
+            echo "RESULT: No changes found to commit for any merged playlists."
+            echo "DEBUG: Current Directory Listing:"
+            ls -R
           else
             git commit -m "Auto-updated merged playlists" # only commits if a binary or text difference exists, alongwith commit message
             # git pull origin ${{ env.MERGE_BRANCH }} --rebase # rebases pull to ensure local is ahead of remote (enable if facing commit/push failures)
