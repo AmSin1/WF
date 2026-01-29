@@ -62,6 +62,7 @@ jobs:
         with:
           repository: '${{ env.DOWNLOAD_REPO }}' # specify 'owner/repo' of the destination repo
           ref: ${{ env.DOWNLOAD_BRANCH }}  # set the destination branch to checkout
+          token: ${{ secrets.PAT_FG_SYNC }}
           fetch-depth: 0 # get full history to allow rebasing (recommended for every job that needs to commit and push back)
           persist-credentials: false # REQUIRED if upstream repo is private (see wiki)
           path: 'download-branch'
@@ -260,6 +261,7 @@ jobs:
         with:
           repository: '${{ env.DOWNLOAD_REPO }}' # specify 'owner/repo' of the source repo
           ref: ${{ env.DOWNLOAD_BRANCH }}  # set the source branch to checkout
+          token: ${{ secrets.PAT_FG_SYNC }}
           fetch-depth: 0 # get full history to allow rebasing (recommended for every job that needs to commit and push back)
           persist-credentials: false # REQUIRED if upstream repo is private (see wiki)
           path: 'download-branch'
