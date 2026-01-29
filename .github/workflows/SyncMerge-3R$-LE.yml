@@ -1,14 +1,4 @@
-# This workflow is configired to be trigerred manually from GitHUb WebUI or by an external cronjob scheduler service
-# This workflow has 3 jobs:
-# 1) copies specified playlists from source repo and overwrites corresponding specified playlists in destination branch/directory in destination repo
-# 2) creates custom-formatted deduplicated merged playlists with prioritized m3u comtent-blocks from already copied source playlists
-# 3) echos the input message identifying source of workflow trigger (manual via WebUI or automated external cronjob service)
-# Works for copying from any branch of a public source repo into any branch of a public/private destination repo
-# The .yml file may be placed in any 3rd public/private repo (non-source, non-destination)(say, control repo) in its default (i.e. main) branch at the 'github/workflows/' directory
-# Need to use Personal Access Token (PAT) for commiting and pushing to destination repo - create a PAT Classic (with workflow permissions) or PAT Fine-grained (with actions(R/W), contents(code)(R/W), pull requests(R/W) and workflows(R/W) permissions)
-# Store PAT Classic or PAT Fine-grained token's value in the control repo's secrets with names PAT_CL_SYNC or PAT_FG_SYNC
-
-name: SyncMerge LE $2
+name: SyncMerge 3R $ LE
 
 on: 
   workflow_dispatch: # allows manual workflow run from the Actions tab (workflow must be in default branch to work)
