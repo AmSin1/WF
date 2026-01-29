@@ -436,7 +436,7 @@ jobs:
 
             # Sub-step 1e: Echo result at end of merge process for this merged playlist
             if [ $? -eq 0 ]; then
-              local final_path="$target_dir/$output"
+              local final_path="merge-branch/$dir/$output"
               local final_size=$(stat -c%s "$final_path")
               local final_extinf=$(grep -c "#EXTINF" "$final_path" || true)
               echo "RESULT: Merge process for $output COMPLETED. $output ($final_size bytes) is ready to push. $final_extinf #EXTINF lines present." # debug at the end of merge process
