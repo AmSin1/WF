@@ -24,6 +24,8 @@ on:
       
 env:
   CRONJOB_SERVICE: "FastCron"
+  DESTINATION_DIR1_PATH: "sl-le"
+  DESTINATION_DIR2_PATH: "fc-le"
 
 concurrency: # ensures that only one GitHub workflow runs at a time for a specific branch in a repo, prevents conditions where two separate workflow runs attempt to push to same branch simultaneously
   group: sync-${{ github.head_ref || github.ref_name }}
