@@ -1,1 +1,40 @@
+# This GitHub Action resets the 60-day inactivity timer for the repository, to prevent GitHub from disabling GitHub Actions
+# Uses third party action 'stefanzweifel/git-auto-commit-action@v5'
+# Creates and commits a file named 'keepalive.txt' in the root directory of the default branch of the repository, containing the current UTC date and time
+# Repeats the action as per specified schedule
 
+name: KeepAlive with Timestamp Commit
+
+on:
+  workflow_dispatch: # allows manual workflow run from the Actions tab
+  schedule: # scheduled to run at designated times, for example, once a week on Friday at 02:31 UTC
+    - cron: '34 2 * * FRI'
+
+jobs:
+  keepalive_commit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # grants permissions for the job to write to the repository
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: main # specifies the main branch to checkout
+
+      - name: Generate Timestamp in the Dummy File
+        run: |
+          echo "Last keep-alive: $(date +'%Y-%m-%d %H:%M:%S UTC')" >> ./keepalive.txt # appends current timestamp to the file 
+          echo "Current keep-alive log (last 5 entries):"
+          tail -n 5 ./keepalive.txt # includes only the last 5 timestamp commits in the echo
+
+      - name: Commit the Timestamp File and Push to Repository
+        run: |
+          git config user.name "github-actions[bot]" # configure git
+          git config user.email "github-actions[bot]@users.noreply.github.com" # configure git         
+          git add ./keepalive.txt # stages the specific file   
+          if git diff --staged --quiet; then # checks if there are any changes
+            echo "No changes found to commit"
+          else
+            git commit -m "Automated keep-alive commit: $(date +'%Y-%m-%d %H:%M:%S')"
+            git push origin main # pushes to the destination branch
+          fi        
