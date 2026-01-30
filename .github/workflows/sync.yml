@@ -1,43 +1,56 @@
-name: Update DestRepo M3U
+name: Sync M3U to DestRepo
 on:
-  # schedule:
-    # - cron: '0 * * * *' # Every hour
   workflow_dispatch:
+  # schedule:
+    # - cron: '0 * * * *'
 
 jobs:
-  build:
+  generate_and_push:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout ControlRepo
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: '3.10'
 
-      - name: Install dependencies
+      - name: Install Requests
         run: pip install requests
 
-      - name: Run Script
+      - name: Run Generator Script
         run: python generate_m3u.py
 
-      - name: Clone DestRepo and Push
+      - name: Clone, Generate, and Push
         run: |
-          # Configure Git
+          # 1. Configure Git
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.PAT_FG_SYNC }}@github.com/AmSin1/Repo.git
-          
-          # Clone only the specific branch 'autocreate' from destrepo
-          git clone --branch autocopied https://${{ secrets.PAT_FG_SYNC }}@github.com/AmSin1/Repo.git dest_folder
-          
-          # Move the generated m3u into the cloned folder
-          mv playlist.m3u dest_folder/
-          
-          # Commit and Push
+
+          # 2. Clone the destination repo branch 'autocreate' into a folder named 'dest_folder'
+          # Using your specific PAT secret and username
+          git clone --branch autocopied https://x-access-token:${{ secrets.PAT_FG_SYNC }}@github.com/AmSin1/Repo.git dest_folder
+
+          # 3. Run the python script (make sure it exists in your controlrepo root)
+          python generate_m3u.py
+
+          # 4. Move the generated file into the cloned repo folder
+          if [ -f playlist.m3u ]; then
+            mv playlist.m3u dest_folder/playlist.m3u
+          else
+            echo "Error: playlist.m3u not found!"
+            exit 1
+          fi
+
+          # 5. Commit and Push from the dest_folder
           cd dest_folder
           git add playlist.m3u
-          # Only commit if there are changes to avoid workflow failure
-          git diff-index --quiet HEAD || git commit -m "Auto-update playlist.m3u"
-          git push origin autocopied
+          
+          # Check for changes so the action doesn't fail if there's nothing new
+          if git diff --staged --quiet; then
+            echo "No changes detected in playlist."
+          else
+            git commit -m "Auto-update playlist.m3u from controlrepo"
+            git push origin autocopied
+          fi
