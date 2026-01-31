@@ -1,0 +1,52 @@
+name: Check M3U Timestamps (IST)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "**.m3u"
+
+jobs:
+  check-timestamps:
+    runs-on: ubuntu-latest
+    # Set the timezone globally for this job
+    env:
+      TZ: 'Asia/Kolkata' 
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          repository: 'AmSin1/Pvt-Repo' # specify 'owner/repo' of the destination repo
+          ref: autocopied  # set the destination branch to checkout
+          token: ${{ secrets.PAT_FG_SYNC }}
+          fetch-depth: 0 # get full history to allow rebasing (recommended for every job that needs to commit and push back)
+          persist-credentials: false # REQUIRED if upstream repo is private (see wiki)
+          path: 'download-branch'
+
+      - name: Get Last Updated Timestamps in IST
+        run: |
+          # Explicitly list all 7 playlist paths across your 2 folders
+          PLAYLISTS=(
+            "fc-le/fc-le-1.m3u"
+            "fc-le/fc-le-2.m3u"
+            "fc-le/fc-le-3.m3u"
+            "fc-le/fc-le-4.m3u"
+            "sl-le/sl-le-1.m3u"
+            "sl-le/sl-le-2.m3u"
+            "sl-le/sl-le-3.m3u"
+          )
+          
+          echo "### M3U Playlist Update Report (IST)"
+          echo "======================================"
+          
+          for file in "${PLAYLISTS[@]}"; do
+            if [ -f "$file" ]; then
+              # Get the last commit date for the specific file path
+              TIMESTAMP=$(git log -1 --date=local --format="%ad" -- "$file")
+              echo "File: $file"
+              echo "IST Time: $TIMESTAMP"
+              echo "--------------------------------------"
+            else
+              echo "× Error: '$file' not found. Check the path case-sensitivity."
+            fi
+          done
